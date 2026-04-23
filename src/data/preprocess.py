@@ -60,11 +60,11 @@ def split_data(df: pd.DataFrame):
     X = df.drop(columns=[TARGET])
     y = df[TARGET]
 
-    # 1ª divisão: 75% treino, 25% temporário
+   
     X_train, X_temp, y_train, y_temp = train_test_split(
         X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
     )
-    # 2ª divisão: o "temporário" vira 50% validação + 50% teste
+   
     X_val, X_test, y_val, y_test = train_test_split(
         X_temp, y_temp, test_size=VAL_SIZE, random_state=RANDOM_STATE, stratify=y_temp
     )
@@ -93,7 +93,6 @@ def preprocessing_pipeline(df: pd.DataFrame):
     X_train, X_val, X_test, y_train, y_val, y_test = split_data(df)
     X_train_sc, X_val_sc, X_test_sc, scaler = scale_data(X_train, X_val, X_test)
 
-    # Metadados úteis para logar no MLflow
     dataset_meta = {
         "dataset_rows":     len(df),
         "dataset_features": X_train.shape[1],
