@@ -1,9 +1,13 @@
 # main.py
 
-from src.data.load import load_data
-from src.data.preprocess import preprocessing_pipeline
-from src.features.selection import get_num_columns
+import pandas as pd
+from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
+from src.data.load import load_data
+from src.models.train import prepare_data, split_data, train_pipeline
 from src.visualization.eda import (
     plot_target_distribution,
     plot_boxplots,
@@ -11,87 +15,68 @@ from src.visualization.eda import (
     plot_bivariate,
     plot_confusion_matrix,
 )
-
-from src.models.baseline import dummy_classifier, logistic_regression
-from src.models.tree_models import find_best_depth, decision_tree, random_forest
-from src.models.neural import mlp
-
+from src.features.selection import get_num_columns
 from src.evaluation.business import calculate_financial_result, compare_models_financial
+import hashlib
 
 
 def main():
-    # Carregar Dataset
+    # Carregar Dados
     df = load_data()
+    df_eda = df.rename(columns={"Churn Value": "Churn Target"})
 
-    df = df.rename(columns={"Churn Value": "Churn Target"})
-    #  EDA  
-    num_cols = get_num_columns(df)
-    plot_target_distribution(df)
-    plot_boxplots(df, num_cols)
-    plot_histograms(df, num_cols)
-    plot_bivariate(df, num_cols)
+    #EDA 
+    num_cols = get_num_columns(df_eda)
+    plot_target_distribution(df_eda)
+    plot_boxplots(df_eda, num_cols)
+    plot_histograms(df_eda, num_cols)
+    plot_bivariate(df_eda, num_cols)
 
-    # Pré-processamento 
-    dados = preprocessing_pipeline(df)
+    #  Preparar X e y 
+    X, y = prepare_data(df)
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(X, y)
 
-    X_train      = dados["X_train"]
-    X_val        = dados["X_val"]
-    X_test       = dados["X_test"]
-    y_train      = dados["y_train"]
-    y_val        = dados["y_val"]
-    y_test       = dados["y_test"]
-    X_train_sc   = dados["X_train_scaled"]
-    X_val_sc     = dados["X_val_scaled"]
-    X_test_sc    = dados["X_test_scaled"]
-    dataset_meta = dados["dataset_meta"]
+    # Metadados para o MLflow
+    dataset_meta = {
+        "dataset_rows":   len(df),
+        "train_size":     len(X_train),
+        "test_size":      len(X_test),
+        "churn_rate_pct": round(y.mean() * 100, 2),
+        "dataset_hash":   hashlib.md5(
+            pd.util.hash_pandas_object(df, index=True).values
+        ).hexdigest(),
+    }
 
-    # Modelos Baseline 
-    _, y_pred_dummy, _ = dummy_classifier(
-        X_train_sc, X_test_sc, y_train, y_test, dataset_meta
-    )
-    plot_confusion_matrix(y_test, y_pred_dummy, "Dummy")
+    # Treinar models via pipeline 
+    resultados_business = []
 
-    _, y_pred_lr, _ = logistic_regression(
-        X_train_sc, X_test_sc, y_train, y_test, dataset_meta
-    )
-    plot_confusion_matrix(y_test, y_pred_lr, "Regressão Logística")
+    models = [
+        (DummyClassifier(strategy="most_frequent", random_state=42), "dummy_baseline",               False),
+        (LogisticRegression(random_state=42, max_iter=1000),          "logistic_regression_baseline", True),
+        (DecisionTreeClassifier(max_depth=7, random_state=42),        "decision_tree_baseline",       True),
+        (RandomForestClassifier(n_estimators=40, max_depth=15,
+                                criterion="entropy", random_state=42),"random_forest_baseline",       True),
+    ]
 
-    #  Modelos de Árvore 
-    melhores = find_best_depth(X_train, y_train)
+    for model, nome_run, fazer_cv in models:
+        pipeline, y_pred, y_proba = train_pipeline(
+            model=model,
+            nome_run=nome_run,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+            dataset_meta=dataset_meta,
+            fazer_cv=fazer_cv,
+        )
+        plot_confusion_matrix(y_test, y_pred, nome_run)
 
-    _, y_pred_tree, _ = decision_tree(
-        X_train, X_test, y_train, y_test, dataset_meta,
-        max_depth=melhores["tree_depth"]
-    )
-    plot_confusion_matrix(y_test, y_pred_tree, "Decision Tree")
-
-    _, y_pred_forest, _ = random_forest(
-        X_train, X_test, y_train, y_test, dataset_meta,
-        max_depth=melhores["forest_depth"]
-    )
-    plot_confusion_matrix(y_test, y_pred_forest, "Random Forest")
-
-    #  6. Rede Neural 
-    _, y_pred_mlp, _ = mlp(
-        X_train_sc, X_val_sc, X_test_sc,
-        y_train, y_val, y_test, dataset_meta
-    )
-    plot_confusion_matrix(y_test, y_pred_mlp, "MLP PyTorch")
-
-    #  7. Análise de Negócio 
-    modelos_resultado = []
-    for nome, y_pred in [
-        ("Dummy",               y_pred_dummy),
-        ("Regressão Logística", y_pred_lr),
-        ("Decision Tree",       y_pred_tree),
-        ("Random Forest",       y_pred_forest),
-        ("MLP PyTorch",         y_pred_mlp),
-    ]:
         r = calculate_financial_result(y_test, y_pred)
-        r["model"] = nome
-        modelos_resultado.append(r)
+        r["model"] = nome_run
+        resultados_business.append(r)
 
-    compare_models_financial(modelos_resultado)
+    # Análise financeira 
+    compare_models_financial(resultados_business)
 
 
 if __name__ == "__main__":
