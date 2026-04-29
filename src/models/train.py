@@ -6,14 +6,16 @@ import mlflow
 import mlflow.sklearn
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+import joblib, os
 
-from src.config import TARGET, TEST_SIZE, VAL_SIZE, RANDOM_STATE, MLFLOW_EXPERIMENT
+
+from src.config import TARGET, TEST_SIZE, VAL_SIZE, RANDOM_STATE, MLFLOW_EXPERIMENT, MODEL_ARTIFACT_PATH, INFERENCE_THRESHOLD
 from src.data.pipeline import create_preprocessing_pipeline
 from src.evaluation.metrics import calculate_metrics
 
 
+
 def prepare_data(df: pd.DataFrame):
-    #Extrai X e y do DataFrame bruto.
 
     # Aceita os dois nomes possíveis do target
     col_target = TARGET if TARGET in df.columns else "Churn Value"
@@ -98,4 +100,29 @@ def train_pipeline(
         for nome, valor in metrics.items():
             print(f"  {nome:<16}: {valor:.4f}")
 
+        artifact = {
+            "pipeline":  pipeline,
+            "threshold": INFERENCE_THRESHOLD,
+            "metadata":  {**dataset_meta, "run_name": nome_run},
+        }
+    
+                
+    path = MODEL_ARTIFACT_PATH.replace(".joblib", f"_{nome_run}.joblib")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    joblib.dump(artifact, path)
+
     return pipeline, y_pred, y_proba
+# src/models/train.py  ← adicionar esta função
+
+def get_preprocessed_data(X_train, X_val, X_test, y_train, y_val, y_test):
+    #Aplica o pipeline de pré-processamento (sem model) para obter os dados escalados.
+    from src.data.pipeline import create_preprocessing_pipeline as create_prep
+
+    preprocessor = create_prep()          # só as etapas de pré-proc, sem model
+    preprocessor.fit(X_train, y_train)    # fit apenas no treino
+
+    X_train_sc = preprocessor.transform(X_train)
+    X_val_sc   = preprocessor.transform(X_val)
+    X_test_sc  = preprocessor.transform(X_test)
+
+    return X_train_sc, X_val_sc, X_test_sc
