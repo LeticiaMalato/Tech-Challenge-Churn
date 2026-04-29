@@ -38,7 +38,8 @@ class ConvertYesNoTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X = X.copy()
-        X[self.cols_yes_no_] = X[self.cols_yes_no_].replace({"Yes": 1, "No": 0})
+        cols_presentes = [c for c in self.cols_yes_no_ if c in X.columns]
+        X[cols_presentes] = X[cols_presentes].replace({"Yes": 1, "No": 0})
         return X
 
 
@@ -58,7 +59,8 @@ class RemoveColumnsTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X = X.copy()
-        return X.drop(columns=self.colunas_existentes_)
+        cols_presentes = [c for c in self.colunas_existentes_ if c in X.columns]
+        return X.drop(columns=cols_presentes)
 
 
 class OneHotEncoderTransformer(BaseEstimator, TransformerMixin):
