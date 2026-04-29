@@ -45,3 +45,8 @@ RETENTION_RATE    = 0.30   # % de clientes que ficam quando abordados
 
 #  MLflow 
 MLFLOW_EXPERIMENT = "Telco-Churn"
+
+# API 
+MODEL_ARTIFACT_PATH = "artifacts/churn_pipeline.joblib"
+INFERENCE_THRESHOLD = 0.4  
+API_LOG_LEVEL       = "INFO"
