@@ -18,9 +18,13 @@ def find_best_depth(X_train, y_train) -> dict:
     # Decision Tree
     gs_tree = GridSearchCV(
         DecisionTreeClassifier(random_state=42),
-        param_grid, cv=5, scoring="roc_auc", n_jobs=1
+        param_grid,
+        cv=5,
+        scoring="roc_auc",
+        n_jobs=1
     )
     gs_tree.fit(X_train, y_train)
+    
     print(f"  Melhor Decision Tree → {gs_tree.best_params_} | ROC-AUC: {gs_tree.best_score_:.4f}")
 
     # Random Forest

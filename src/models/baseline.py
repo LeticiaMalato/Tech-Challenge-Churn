@@ -12,7 +12,7 @@ from src.config import MLFLOW_EXPERIMENT
 from src.evaluation.metrics import calculate_metrics
 
 
-def dummy_classifier(X_train, X_test, y_train, y_test, dataset_meta: dict):
+def dummy_classifier(X_train_scaled, X_test_scaled, y_train, y_test, dataset_meta: dict):
     #Dummy Classifier
     mlflow.end_run()
     mlflow.set_experiment(MLFLOW_EXPERIMENT)
@@ -21,10 +21,10 @@ def dummy_classifier(X_train, X_test, y_train, y_test, dataset_meta: dict):
         mlflow.log_params(dataset_meta)
 
         model = DummyClassifier(strategy="most_frequent", random_state=42)
-        model.fit(X_train, y_train)
+        model.fit(X_train_scaled, y_train)
 
-        y_pred  = model.predict(X_test)
-        y_proba = model.predict_proba(X_test)[:, 1]
+        y_pred  = model.predict(X_test_scaled)
+        y_proba = model.predict_proba(X_test_scaled)[:, 1]
 
         metrics = calculate_metrics(y_test, y_pred, y_proba)
         mlflow.log_metrics(metrics)
@@ -37,7 +37,7 @@ def dummy_classifier(X_train, X_test, y_train, y_test, dataset_meta: dict):
     return model, y_pred, y_proba
 
 
-def logistic_regression(X_train, X_test, y_train, y_test, dataset_meta: dict):
+def logistic_regression(X_train_scaled, X_test_scaled, y_train, y_test, dataset_meta: dict):
     # Regressão Logística
     mlflow.end_run()
     mlflow.set_experiment(MLFLOW_EXPERIMENT)
@@ -46,11 +46,11 @@ def logistic_regression(X_train, X_test, y_train, y_test, dataset_meta: dict):
         mlflow.log_params(dataset_meta)
 
         model = LogisticRegression(random_state=42, max_iter=1000)
-        model.fit(X_train, y_train)
+        model.fit(X_train_scaled, y_train)
 
-        y_pred_train = model.predict(X_train)
-        y_pred       = model.predict(X_test)
-        y_proba      = model.predict_proba(X_test)[:, 1]
+        y_pred_train = model.predict(X_train_scaled)
+        y_pred       = model.predict(X_test_scaled)
+        y_proba      = model.predict_proba(X_test_scaled)[:, 1]
 
         metrics = calculate_metrics(y_test, y_pred, y_proba)
         metrics["train_accuracy"] = accuracy_score(y_train, y_pred_train)
