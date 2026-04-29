@@ -43,11 +43,11 @@ def split_data(X, y):
     return X_train, X_val, X_test, y_train, y_val, y_test
 
 
-def create_preprocessing_pipeline(model) -> Pipeline:
-    from src.data.pipeline import create_preprocessing_pipeline as create_prep
+def build_full_pipeline(model) -> Pipeline:
+    # from src.data.pipeline import create_preprocessing_pipeline as create_prep
   
     #Junta o pipeline de pré-processamento com o model.
-    preprocessamento = create_prep()
+    preprocessamento = create_preprocessing_pipeline()
 
     pipeline_completo = Pipeline(steps=[
         *preprocessamento.steps,   # desempacota todas as etapas de pré-proc
@@ -116,9 +116,9 @@ def train_pipeline(
 
 def get_preprocessed_data(X_train, X_val, X_test, y_train, y_val, y_test):
     #Aplica o pipeline de pré-processamento (sem model) para obter os dados escalados.
-    from src.data.pipeline import create_preprocessing_pipeline as create_prep
+    
 
-    preprocessor = create_prep()          # só as etapas de pré-proc, sem model
+    preprocessor = create_preprocessing_pipeline()          # só as etapas de pré-proc, sem model
     preprocessor.fit(X_train, y_train)    # fit apenas no treino
 
     X_train_sc = preprocessor.transform(X_train)
