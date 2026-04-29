@@ -28,20 +28,40 @@ def calculate_financial_result(y_true, y_pred,
 
 
 def compare_models_financial(results: list):
-    
-    print(f"\n{'Model':<25} {'FP':>5} {'FN':>5}  {'FP Cost':>11}  {'FN Cost':>11}  {'Net Result':>12}")
-    print("-" * 75)
-    for r in results:
-        print(f"{r['model']:<25} {r['FP']:>5} {r['FN']:>5}  "
-              f"R$ {r['fp_cost']:>8,.0f}  R$ {r['fn_cost']:>8,.0f}  R$ {r['net_result']:>9,.0f}")
+    col_model = 30
+    col_num   =  6
+    col_cost  = 13
 
-    names     = [r["model"] for r in results]
-    fp_cost   = [r["fp_cost"] for r in results]
-    fn_cost   = [r["fn_cost"] for r in results]
+    header = (
+        f"{'Modelo':<{col_model}} {'FP':>{col_num}} {'FN':>{col_num}}"
+        f"  {'Custo FP':>{col_cost}}  {'Custo FN':>{col_cost}}  {'Resultado Líquido':>{col_cost}}"
+    )
+
+    separator = "═" * len(header)
+    best_net  = max(r["net_result"] for r in results)
+
+    print(f"\n{separator}")
+    print(header)
+    print("─" * len(header))
+    for r in results:
+        marker = " ★" if r["net_result"] == best_net else "  "
+        print(
+            f"{r['model']:<{col_model}} {r['FP']:>{col_num}} {r['FN']:>{col_num}}"
+            f"  {'R$ '+f"{r['fp_cost']:>9,.0f}":>{col_cost}}"
+            f"  {'R$ '+f"{r['fn_cost']:>9,.0f}":>{col_cost}}"
+            f"  {'R$ '+f"{r['net_result']:>9,.0f}":>{col_cost}}"
+            f"{marker}"
+        )
+    print(separator)
+
+    names      = [r["model"] for r in results]
+    fp_cost    = [r["fp_cost"] for r in results]
+    fn_cost    = [r["fn_cost"] for r in results]
     net_result = [r["net_result"] for r in results]
 
     x = np.arange(len(names))
     w = 0.35
+    
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
