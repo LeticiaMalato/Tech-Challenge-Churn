@@ -21,20 +21,28 @@ def calculate_metrics(y_true, y_pred, y_proba) -> dict:
 def compare_models_metrics(resultados: list[dict]) -> pd.DataFrame:
     
     cols = ["model", "accuracy", "f1_score", "precision", "recall", "roc_auc"]
-    df = pd.DataFrame(resultados)[cols].sort_values("f1_score", ascending=False)
+    df = pd.DataFrame(resultados)[cols]
 
     print("\n" + "=" * 70)
     print("COMPARAÇÃO DE MODELOS — MÉTRICAS DE CLASSIFICAÇÃO")
     print("=" * 70)
-    print(df.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
+    print(df.sort_values("f1_score", ascending=False).to_string(index=False, float_format=lambda x: f"{x:.4f}"))
     print("=" * 70)
 
-    melhor = df.iloc[0]
-    print(f"\n  Melhor modelo por F1: {melhor['model']}")
-    print(f"    F1:        {melhor['f1_score']:.4f}")
-    print(f"    ROC-AUC:   {melhor['roc_auc']:.4f}")
-    print(f"    Precision: {melhor['precision']:.4f}")
-    print(f"    Recall:    {melhor['recall']:.4f}")
-    print(f"    Accuracy:  {melhor['accuracy']:.4f}")
+    melhor_f1      = df.loc[df["f1_score"].idxmax()]
+    melhor_roc_auc = df.loc[df["roc_auc"].idxmax()]
+    melhor_recall  = df.loc[df["recall"].idxmax()]
+
+    for titulo, melhor in [
+        ("F1",      melhor_f1),
+        ("ROC-AUC", melhor_roc_auc),
+        ("Recall",  melhor_recall),
+    ]:
+        print(f"\n  Melhor modelo por {titulo}: {melhor['model']}")
+        print(f"    F1:        {melhor['f1_score']:.4f}")
+        print(f"    ROC-AUC:   {melhor['roc_auc']:.4f}")
+        print(f"    Precision: {melhor['precision']:.4f}")
+        print(f"    Recall:    {melhor['recall']:.4f}")
+        print(f"    Accuracy:  {melhor['accuracy']:.4f}")
 
     return df
