@@ -57,7 +57,7 @@ def hash(df: pd.DataFrame) -> str:
 
 def split_data(df: pd.DataFrame):
     #split dos dados
-    X = df.drop(columns=[TARGET])
+    X = df.drop(columns=[TARGET], errors="ignore")
     y = df[TARGET]
 
    
