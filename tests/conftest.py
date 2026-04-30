@@ -3,7 +3,8 @@
 import pytest
 import pandas as pd
 import numpy as np
-
+from unittest.mock import MagicMock
+from fastapi.testclient import TestClient
 
 def _make_rows(n):
     #Gera n linhas com estrutura idêntica ao dataset real
@@ -65,7 +66,7 @@ def processed_df(sample_df):
 def X_y_split(processed_df):
     #X e y prontos para treino, usados nos testes de modelo
     from src.config import TARGET
-    X = processed_df.drop(columns=[TARGET])
+    X = processed_df.drop(columns=[TARGET], errors="ignore")
     y = processed_df[TARGET]
     return X, y
 
@@ -74,3 +75,31 @@ def X_y_split(processed_df):
 def empty_dataframe():
     #Fixture com DataFrame vazio para testar edge cases
     return pd.DataFrame()
+
+
+@pytest.fixture(scope="session")
+def mock_pipeline():
+    pipeline = MagicMock()
+    pipeline.predict_proba.return_value = [[0.2, 0.8]]
+    return pipeline
+
+@pytest.fixture
+def api_client(mock_pipeline):
+    from src.api.app import app
+    from src.api import dependencies
+    dependencies.MODEL_ARTIFACTS["pipeline"]  = mock_pipeline
+    dependencies.MODEL_ARTIFACTS["threshold"] = 0.5
+    dependencies.MODEL_ARTIFACTS["metadata"]  = {"run_id": "test-run-001"}
+    with TestClient(app) as client:
+        yield client
+    dependencies.MODEL_ARTIFACTS.clear()
+
+@pytest.fixture
+def valid_customer_payload():
+    return {
+        "gender": "Male", "senior_citizen": "No", "partner": "Yes",
+        "dependents": "No", "tenure_months": 24, "contract": "Month-to-month",
+        "paperless_billing": "Yes", "payment_method": "Electronic check",
+        "monthly_charges": 75.50, "phone_service": "Yes",
+        "internet_service": "Fiber optic",
+    }
