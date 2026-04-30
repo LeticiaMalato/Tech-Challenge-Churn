@@ -1,0 +1,121 @@
+[project]
+name = "telco-churn"
+version = "0.1.0"
+description = "Modelo preditivo de churn para operadora de telecomunicações"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "scikit-learn>=1.4",
+    "torch==2.11.0",
+    "mlflow==3.11.1",
+    "fastapi==0.136.0",
+    "uvicorn==0.45.0",
+    "joblib==1.5.3",
+    "openpyxl==3.1.5",
+    "python-json-logger>=2.0",
+    "pydantic==2.13.3",
+    "matplotlib==3.10.8",
+    "seaborn==0.13.2",
+    "taskipy>=1.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "httpx>=0.28",
+    "pandera>=0.31.1",
+    "ruff>=0.15.12",
+]
+
+[build-system]
+requires = ["setuptools>=71"]
+build-backend = "setuptools.backends.legacy:build"
+
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths        = ["tests"]
+python_files     = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+python_classes   = ["Test*"]
+addopts          = "-v --tb=short --strict-markers"
+markers = [
+    "slow: testes lentos (treino real, MLP)",
+    "smoke: testes de integração ponta a ponta",
+    "unit: testes unitários isolados",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit   = [
+    "src/visualization/*",
+    "src/models/baseline.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty   = true
+fail_under   = 40
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+
+# =============================================================================
+# RUFF - Linter e Formatador
+# =============================================================================
+[tool.ruff]
+target-version = "py311"
+line-length    = 88
+src            = ["src", "tests"]
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "C4",
+    "UP",
+    "SIM",
+]
+ignore   = ["E501", "B008"]
+fixable  = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending  = "auto"
+
+[tool.taskipy.tasks]
+test         = "pytest tests/ -v"
+test-cov     = "pytest tests/ -v --cov=src --cov-report=html --cov-report=term"
+lint         = "ruff check src/ tests/"
+lint-fix     = "ruff check src/ tests/ --fix"
+format       = "ruff format src/ tests/"
+format-check = "ruff format src/ tests/ --check"
+check        = "task lint && task format-check && task test"
+clean        = "rm -rf .pytest_cache .coverage htmlcov __pycache__ .ruff_cache"
