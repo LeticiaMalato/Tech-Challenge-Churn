@@ -35,7 +35,7 @@ class TestSmokePreprocessing:
         assert result["X_train_scaled"] is not result["X_test_scaled"]
 
     def test_rejects_empty_dataframe(self, empty_dataframe):
-        with pytest.raises(Exception):
+        with pytest.raises(KeyError):
             preprocessing_pipeline(empty_dataframe)
 
 
@@ -48,8 +48,8 @@ class TestSmokeSklearnPipeline:
         df = convert_yes_no(sample_df.copy())
         df = rename_target(df)
         y = df[TARGET].astype(int)
-        X = df.drop(columns=[TARGET])
-        return train_test_split(X, y, test_size=0.4, random_state=42)
+        X = df.drop(columns=[TARGET], errors="ignore")
+        return train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
 
     def test_pipeline_fit_predict_runs(self, sample_df):
         from src.data.pipeline import create_preprocessing_pipeline
