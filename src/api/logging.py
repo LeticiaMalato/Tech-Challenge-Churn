@@ -3,7 +3,7 @@ from pythonjsonlogger import jsonlogger
 
 
 def build_logger(name: str) -> logging.Logger:
-    
+
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 

@@ -1,38 +1,42 @@
 # src/data/pipeline.py
 
-import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from src.config import TARGET, NUM_COLS_TO_DROP, CAT_COLS_TO_DROP
+from src.config import (
+    TARGET,
+    NUM_COLS_TO_DROP,
+    CAT_COLS_TO_DROP,
+    TEST_SIZE,
+    VAL_SIZE,
+    RANDOM_STATE,
+)
 
-
-class RenameTargetTransformer(BaseEstimator, TransformerMixin):  
-    #Renomeia 'Churn Value' para 'Churn Target'.
+class RenameTargetTransformer(BaseEstimator, TransformerMixin):
+    # Renomeia 'Churn Value' para 'Churn Target'.
     def fit(self, X, y=None):
-        
+
         return self
 
     def transform(self, X):
-        X = X.copy()  
+        X = X.copy()
         if "Churn Value" in X.columns:
             X = X.rename(columns={"Churn Value": TARGET})
         return X
 
 
+
 class ConvertYesNoTransformer(BaseEstimator, TransformerMixin):
-    
-    #Converte colunas com 'Yes'/'No' para 1/0.
+    # Converte colunas com 'Yes'/'No' para 1/0.
     def __init__(self):
         self.cols_yes_no_ = []  # será preenchido no fit()
 
     def fit(self, X, y=None):
         # Aprende quais colunas têm APENAS Yes/No no treino
         self.cols_yes_no_ = [
-            col for col in X.columns
-            if X[col].dropna().isin(["Yes", "No"]).all()
+            col for col in X.columns if X[col].dropna().isin(["Yes", "No"]).all()
         ]
         return self
 
@@ -44,17 +48,14 @@ class ConvertYesNoTransformer(BaseEstimator, TransformerMixin):
 
 
 class RemoveColumnsTransformer(BaseEstimator, TransformerMixin):
-   
-    #Remove colunas sem valor preditivo e com risco de data leakage.
-    
+    # Remove colunas sem valor preditivo e com risco de data leakage.
+
     def __init__(self, colunas_remover: list):
         self.colunas_remover = colunas_remover
 
     def fit(self, X, y=None):
-      
-        self.colunas_existentes_ = [
-            c for c in self.colunas_remover if c in X.columns
-        ]
+
+        self.colunas_existentes_ = [c for c in self.colunas_remover if c in X.columns]
         return self
 
     def transform(self, X):
@@ -64,11 +65,10 @@ class RemoveColumnsTransformer(BaseEstimator, TransformerMixin):
 
 
 class OneHotEncoderTransformer(BaseEstimator, TransformerMixin):
-    
-    #Aplica One-Hot Encoding nas colunas categóricas (tipo object).
+    # Aplica One-Hot Encoding nas colunas categóricas (tipo object).
     def __init__(self):
-        self.cat_cols_   = []  
-        self.columns_fit_ = []  
+        self.cat_cols_ = []
+        self.columns_fit_ = []
 
     def fit(self, X, y=None):
         self.cat_cols_ = X.select_dtypes(include=["object"]).columns.tolist()
@@ -85,8 +85,7 @@ class OneHotEncoderTransformer(BaseEstimator, TransformerMixin):
 
 
 class SeparateTargetTransformer(BaseEstimator, TransformerMixin):
-  
-    #Remove a coluna target do DataFrame de features.
+    # Remove a coluna target do DataFrame de features.
     def __init__(self, target: str = TARGET):
         self.target = target
 
@@ -101,25 +100,29 @@ class SeparateTargetTransformer(BaseEstimator, TransformerMixin):
         return X
 
     def fit_transform_com_y(self, X):
-    
+
         y = X[self.target].copy() if self.target in X.columns else None
         X_sem_target = self.fit_transform(X)
         return X_sem_target, y
 
 
 
-
-def create_preprocessing_pipeline() -> Pipeline:
-    #Monta e retorna o pipeline completo de pré-processamento.
+def create_preprocessing_pipeline(model=None) -> Pipeline:
+    #Monta e retorna a pipeline
     colunas_para_remover = NUM_COLS_TO_DROP + CAT_COLS_TO_DROP
 
-    pipeline = Pipeline(steps=[
+    steps = [
         ("renomear_target", RenameTargetTransformer()),
         ("converter_yes_no", ConvertYesNoTransformer()),
-        ("remover_colunas",  RemoveColumnsTransformer(colunas_remover=colunas_para_remover)),
-        ("separar_target",   SeparateTargetTransformer(target=TARGET)),
-        ("encoding",         OneHotEncoderTransformer()),
-        ("scaler",           StandardScaler()),
-    ])
+        ("remover_colunas", RemoveColumnsTransformer(
+            colunas_remover=colunas_para_remover
+        )),
+        ("separar_target", SeparateTargetTransformer(target=TARGET)),
+        ("encoding", OneHotEncoderTransformer()),
+        ("scaler", StandardScaler()),
+    ]
 
-    return pipeline
+    if model is not None:
+        steps.append(("model", model))
+
+    return Pipeline(steps=steps)

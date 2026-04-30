@@ -1,5 +1,4 @@
 import pytest
-import pandas as pd
 import pandera as pa
 from pandera import Column, DataFrameSchema, Check
 from src.config import TARGET
@@ -7,7 +6,9 @@ from src.config import TARGET
 schema_bruto = DataFrameSchema(
     columns={
         "Churn Value": Column(int, checks=Check.isin([0, 1]), nullable=False),
-        "Tenure Months": Column(int, checks=Check.greater_than_or_equal_to(0), nullable=False),  # CORRIGIDO: float → int
+        "Tenure Months": Column(
+            int, checks=Check.greater_than_or_equal_to(0), nullable=False
+        ),  # CORRIGIDO: float → int
         "Monthly Charges": Column(float, checks=Check.greater_than(0), nullable=False),
         "Gender": Column(str, checks=Check.isin(["Male", "Female"]), nullable=False),
     },
@@ -17,7 +18,9 @@ schema_bruto = DataFrameSchema(
 schema_processado = DataFrameSchema(
     columns={
         TARGET: Column(int, checks=Check.isin([0, 1]), nullable=False),
-        "Tenure Months": Column(int, checks=Check.greater_than_or_equal_to(0), nullable=False),  # CORRIGIDO: float → int
+        "Tenure Months": Column(
+            int, checks=Check.greater_than_or_equal_to(0), nullable=False
+        ),  # CORRIGIDO: float → int
         "Monthly Charges": Column(float, checks=Check.greater_than(0), nullable=False),
     },
     strict=False,
@@ -25,7 +28,6 @@ schema_processado = DataFrameSchema(
 
 
 class TestRawSchema:
-
     def test_valid_schema(self, sample_df):
         df = sample_df.copy()
         df["Churn Value"] = df["Churn Value"].astype(int)
@@ -51,7 +53,6 @@ class TestRawSchema:
 
 
 class TestProcessedSchema:
-
     def test_valid_schema_after_preprocessing(self, processed_df):
         schema_processado.validate(processed_df)
 

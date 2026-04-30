@@ -16,7 +16,7 @@ async def latency_middleware(request: Request, call_next):
         "Request recebido",
         extra={
             "method": request.method,
-            "path":   request.url.path,
+            "path": request.url.path,
             "client": request.client.host if request.client else "unknown",
         },
     )
@@ -29,10 +29,10 @@ async def latency_middleware(request: Request, call_next):
     logger.info(
         "Request processado",
         extra={
-            "method":      request.method,
-            "path":        request.url.path,
+            "method": request.method,
+            "path": request.url.path,
             "status_code": response.status_code,
-            "latency_ms":  elapsed_ms,
+            "latency_ms": elapsed_ms,
         },
     )
 

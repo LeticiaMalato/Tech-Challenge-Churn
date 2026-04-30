@@ -4,16 +4,16 @@ import mlflow
 import mlflow.sklearn
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix
-import seaborn as sns
-import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
 
 from src.config import MLFLOW_EXPERIMENT
 from src.evaluation.metrics import calculate_metrics
 
 
-def dummy_classifier(X_train_scaled, X_test_scaled, y_train, y_test, dataset_meta: dict):
-    #Dummy Classifier
+def dummy_classifier(
+    X_train_scaled, X_test_scaled, y_train, y_test, dataset_meta: dict
+):
+    # Dummy Classifier
     mlflow.end_run()
     mlflow.set_experiment(MLFLOW_EXPERIMENT)
 
@@ -23,7 +23,7 @@ def dummy_classifier(X_train_scaled, X_test_scaled, y_train, y_test, dataset_met
         model = DummyClassifier(strategy="most_frequent", random_state=42)
         model.fit(X_train_scaled, y_train)
 
-        y_pred  = model.predict(X_test_scaled)
+        y_pred = model.predict(X_test_scaled)
         y_proba = model.predict_proba(X_test_scaled)[:, 1]
 
         metrics = calculate_metrics(y_test, y_pred, y_proba)
@@ -37,7 +37,9 @@ def dummy_classifier(X_train_scaled, X_test_scaled, y_train, y_test, dataset_met
     return model, y_pred, y_proba
 
 
-def logistic_regression(X_train_scaled, X_test_scaled, y_train, y_test, dataset_meta: dict):
+def logistic_regression(
+    X_train_scaled, X_test_scaled, y_train, y_test, dataset_meta: dict
+):
     # Regressão Logística
     mlflow.end_run()
     mlflow.set_experiment(MLFLOW_EXPERIMENT)
@@ -49,12 +51,12 @@ def logistic_regression(X_train_scaled, X_test_scaled, y_train, y_test, dataset_
         model.fit(X_train_scaled, y_train)
 
         y_pred_train = model.predict(X_train_scaled)
-        y_pred       = model.predict(X_test_scaled)
-        y_proba      = model.predict_proba(X_test_scaled)[:, 1]
+        y_pred = model.predict(X_test_scaled)
+        y_proba = model.predict_proba(X_test_scaled)[:, 1]
 
         metrics = calculate_metrics(y_test, y_pred, y_proba)
         metrics["train_accuracy"] = accuracy_score(y_train, y_pred_train)
-        metrics["overfitting"]    = metrics["train_accuracy"] - metrics["accuracy"]
+        metrics["overfitting"] = metrics["train_accuracy"] - metrics["accuracy"]
 
         mlflow.log_metrics(metrics)
         mlflow.sklearn.log_model(model, "model")

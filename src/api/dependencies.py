@@ -1,4 +1,3 @@
-
 import joblib
 from fastapi import HTTPException
 from src.config import MODEL_ARTIFACT_PATH
@@ -13,9 +12,9 @@ MODEL_ARTIFACTS: dict = {}
 def load_artifacts() -> None:
     try:
         artifacts = joblib.load(MODEL_ARTIFACT_PATH)
-        MODEL_ARTIFACTS["pipeline"]  = artifacts["pipeline"]
+        MODEL_ARTIFACTS["pipeline"] = artifacts["pipeline"]
         MODEL_ARTIFACTS["threshold"] = artifacts.get("threshold", 0.5)
-        MODEL_ARTIFACTS["metadata"]  = artifacts.get("metadata", {})
+        MODEL_ARTIFACTS["metadata"] = artifacts.get("metadata", {})
         logger.info("Modelo carregado", extra={"path": MODEL_ARTIFACT_PATH})
     except FileNotFoundError:
         logger.warning(
@@ -25,10 +24,9 @@ def load_artifacts() -> None:
 
 
 def clear_artifacts() -> None:
-    
+
     MODEL_ARTIFACTS.clear()
     logger.info("Artefatos liberados")
-
 
 
 def get_pipeline():

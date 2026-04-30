@@ -1,18 +1,25 @@
 # src/models/train.py
 
 import pandas as pd
-import numpy as np
 import mlflow
 import mlflow.sklearn
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
-import joblib, os
+import joblib
+import os
 
 
-from src.config import TARGET, TEST_SIZE, VAL_SIZE, RANDOM_STATE, MLFLOW_EXPERIMENT, MODEL_ARTIFACT_PATH, INFERENCE_THRESHOLD
+from src.config import (
+    TARGET,
+    TEST_SIZE,
+    VAL_SIZE,
+    RANDOM_STATE,
+    MLFLOW_EXPERIMENT,
+    MODEL_ARTIFACT_PATH,
+    INFERENCE_THRESHOLD,
+)
 from src.data.pipeline import create_preprocessing_pipeline
 from src.evaluation.metrics import calculate_metrics
-
 
 
 def prepare_data(df: pd.DataFrame):
@@ -26,18 +33,12 @@ def prepare_data(df: pd.DataFrame):
 
 
 def split_data(X, y):
-    #Divide dados em treino, validação e teste com stratify para manter proporção do target.
+    # Divide dados em treino, validação e teste com stratify para manter proporção do target.
     X_train, X_temp, y_train, y_temp = train_test_split(
-        X, y,
-        test_size=TEST_SIZE,
-        random_state=RANDOM_STATE,
-        stratify=y
+        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
     )
     X_val, X_test, y_val, y_test = train_test_split(
-        X_temp, y_temp,
-        test_size=VAL_SIZE,
-        random_state=RANDOM_STATE,
-        stratify=y_temp
+        X_temp, y_temp, test_size=VAL_SIZE, random_state=RANDOM_STATE, stratify=y_temp
     )
     print(f"  Treino: {len(X_train)} | Validação: {len(X_val)} | Teste: {len(X_test)}")
     return X_train, X_val, X_test, y_train, y_val, y_test
@@ -45,14 +46,16 @@ def split_data(X, y):
 
 def build_full_pipeline(model) -> Pipeline:
     # from src.data.pipeline import create_preprocessing_pipeline as create_prep
-  
-    #Junta o pipeline de pré-processamento com o model.
+
+    # Junta o pipeline de pré-processamento com o model.
     preprocessamento = create_preprocessing_pipeline()
 
-    pipeline_completo = Pipeline(steps=[
-        *preprocessamento.steps,   # desempacota todas as etapas de pré-proc
-        ("model", model),         # adiciona o model no final
-    ])
+    pipeline_completo = Pipeline(
+        steps=[
+            *preprocessamento.steps,  # desempacota todas as etapas de pré-proc
+            ("model", model),  # adiciona o model no final
+        ]
+    )
 
     return pipeline_completo
 
@@ -60,12 +63,14 @@ def build_full_pipeline(model) -> Pipeline:
 def train_pipeline(
     model,
     nome_run: str,
-    X_train, X_test,
-    y_train, y_test,
+    X_train,
+    X_test,
+    y_train,
+    y_test,
     dataset_meta: dict,
-    fazer_cv: bool = True
+    fazer_cv: bool = True,
 ):
-    #Treina um model usando o pipeline completo e loga no MLflow.
+    # Treina um model usando o pipeline completo e loga no MLflow.
     pipeline = create_preprocessing_pipeline(model)
 
     mlflow.end_run()
@@ -74,22 +79,20 @@ def train_pipeline(
     with mlflow.start_run(run_name=nome_run):
         mlflow.log_params(dataset_meta)
 
-      
         if fazer_cv:
             kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
             cv_scores = cross_val_score(
-                pipeline, X_train, y_train,
-                cv=kf, scoring="roc_auc"
+                pipeline, X_train, y_train, cv=kf, scoring="roc_auc"
             )
             mlflow.log_metric("cv_roc_auc_mean", cv_scores.mean())
-            mlflow.log_metric("cv_roc_auc_std",  cv_scores.std())
+            mlflow.log_metric("cv_roc_auc_std", cv_scores.std())
             print(f"  CV ROC-AUC: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
         # Treino
         pipeline.fit(X_train, y_train)
 
-        #  Avaliação 
-        y_pred  = pipeline.predict(X_test)
+        #  Avaliação
+        y_pred = pipeline.predict(X_test)
         y_proba = pipeline.predict_proba(X_test)[:, 1]
 
         metrics = calculate_metrics(y_test, y_pred, y_proba)
@@ -101,28 +104,36 @@ def train_pipeline(
             print(f"  {nome:<16}: {valor:.4f}")
 
         artifact = {
-            "pipeline":  pipeline,
+            "pipeline": pipeline,
             "threshold": INFERENCE_THRESHOLD,
-            "metadata":  {**dataset_meta, "run_name": nome_run},
+            "metadata": {**dataset_meta, "run_name": nome_run, "run_id": run.info.run_id, },
         }
-    
-                
-    path = MODEL_ARTIFACT_PATH.replace(".joblib", f"_{nome_run}.joblib")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    joblib.dump(artifact, path)
+
+    path_run = MODEL_ARTIFACT_PATH.replace(".joblib", f"_{nome_run}.joblib")
+    os.makedirs(os.path.dirname(path_run), exist_ok=True)
+    joblib.dump(artifact, path_run)
+
+    # Salva também como "latest" para a API consumir
+    joblib.dump(artifact, MODEL_ARTIFACT_PATH)
+    print(f"  Artifact salvo em: {path_run}")
+    print(f"  Artifact latest:   {MODEL_ARTIFACT_PATH}")
 
     return pipeline, y_pred, y_proba
-# src/models/train.py  ← adicionar esta função
+
+
+
+
 
 def get_preprocessed_data(X_train, X_val, X_test, y_train, y_val, y_test):
-    #Aplica o pipeline de pré-processamento (sem model) para obter os dados escalados.
-    
+    # Aplica o pipeline de pré-processamento (sem model) para obter os dados escalados.
 
-    preprocessor = create_preprocessing_pipeline()          # só as etapas de pré-proc, sem model
-    preprocessor.fit(X_train, y_train)    # fit apenas no treino
+    preprocessor = create_preprocessing_pipeline()  # ok
+    preprocessor.fit(X_train, y_train)
 
     X_train_sc = preprocessor.transform(X_train)
-    X_val_sc   = preprocessor.transform(X_val)
-    X_test_sc  = preprocessor.transform(X_test)
+    X_val_sc = preprocessor.transform(X_val)
+    X_test_sc = preprocessor.transform(X_test)
 
     return X_train_sc, X_val_sc, X_test_sc
+
+

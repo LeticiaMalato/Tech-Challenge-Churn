@@ -33,9 +33,8 @@ app = FastAPI(
 app.middleware("http")(latency_middleware)
 
 
-app.include_router(health_router,  tags=["Infra"])
+app.include_router(health_router, tags=["Infra"])
 app.include_router(predict_router, tags=["Inference"])
-
 
 
 @app.exception_handler(Exception)

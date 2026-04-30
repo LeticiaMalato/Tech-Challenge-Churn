@@ -12,7 +12,7 @@ from src.evaluation.metrics import calculate_metrics
 
 
 def find_best_depth(X_train, y_train) -> dict:
-    #Usa GridSearchCV para encontrar o melhor max_depth para árvore de decisão e random fores
+    # Usa GridSearchCV para encontrar o melhor max_depth para árvore de decisão e random fores
     param_grid = {"max_depth": [3, 5, 7, 10, 15, None]}
 
     # Decision Tree
@@ -21,28 +21,35 @@ def find_best_depth(X_train, y_train) -> dict:
         param_grid,
         cv=5,
         scoring="roc_auc",
-        n_jobs=1
+        n_jobs=1,
     )
     gs_tree.fit(X_train, y_train)
-    
-    print(f"  Melhor Decision Tree → {gs_tree.best_params_} | ROC-AUC: {gs_tree.best_score_:.4f}")
+
+    print(
+        f"  Melhor Decision Tree → {gs_tree.best_params_} | ROC-AUC: {gs_tree.best_score_:.4f}"
+    )
 
     # Random Forest
     gs_forest = GridSearchCV(
         RandomForestClassifier(n_estimators=40, random_state=42),
-        param_grid, cv=5, scoring="roc_auc", n_jobs=1
+        param_grid,
+        cv=5,
+        scoring="roc_auc",
+        n_jobs=1,
     )
     gs_forest.fit(X_train, y_train)
-    print(f"  Melhor Random Forest → {gs_forest.best_params_} | ROC-AUC: {gs_forest.best_score_:.4f}")
+    print(
+        f"  Melhor Random Forest → {gs_forest.best_params_} | ROC-AUC: {gs_forest.best_score_:.4f}"
+    )
 
     return {
-        "tree_depth":   gs_tree.best_params_["max_depth"],
+        "tree_depth": gs_tree.best_params_["max_depth"],
         "forest_depth": gs_forest.best_params_["max_depth"],
     }
 
 
 def decision_tree(X_train, X_test, y_train, y_test, dataset_meta: dict, max_depth=7):
-    #Decision Tree
+    # Decision Tree
 
     mlflow.end_run()
     mlflow.set_experiment(MLFLOW_EXPERIMENT)
@@ -54,12 +61,12 @@ def decision_tree(X_train, X_test, y_train, y_test, dataset_meta: dict, max_dept
         model.fit(X_train, y_train)
 
         y_pred_train = model.predict(X_train)
-        y_pred       = model.predict(X_test)
-        y_proba      = model.predict_proba(X_test)[:, 1]
+        y_pred = model.predict(X_test)
+        y_proba = model.predict_proba(X_test)[:, 1]
 
         metrics = calculate_metrics(y_test, y_pred, y_proba)
         metrics["train_accuracy"] = accuracy_score(y_train, y_pred_train)
-        metrics["overfitting"]    = metrics["train_accuracy"] - metrics["accuracy"]
+        metrics["overfitting"] = metrics["train_accuracy"] - metrics["accuracy"]
 
         mlflow.log_metrics(metrics)
         mlflow.sklearn.log_model(model, "model")
@@ -72,8 +79,8 @@ def decision_tree(X_train, X_test, y_train, y_test, dataset_meta: dict, max_dept
 
 
 def random_forest(X_train, X_test, y_train, y_test, dataset_meta: dict, max_depth=15):
-    #Random Forest
-    
+    # Random Forest
+
     mlflow.end_run()
     mlflow.set_experiment(MLFLOW_EXPERIMENT)
 
@@ -81,18 +88,17 @@ def random_forest(X_train, X_test, y_train, y_test, dataset_meta: dict, max_dept
         mlflow.log_params(dataset_meta)
 
         model = RandomForestClassifier(
-            n_estimators=40, max_depth=max_depth,
-            criterion="entropy", random_state=42
+            n_estimators=40, max_depth=max_depth, criterion="entropy", random_state=42
         )
         model.fit(X_train, y_train)
 
         y_pred_train = model.predict(X_train)
-        y_pred       = model.predict(X_test)
-        y_proba      = model.predict_proba(X_test)[:, 1]
+        y_pred = model.predict(X_test)
+        y_proba = model.predict_proba(X_test)[:, 1]
 
         metrics = calculate_metrics(y_test, y_pred, y_proba)
         metrics["train_accuracy"] = accuracy_score(y_train, y_pred_train)
-        metrics["overfitting"]    = metrics["train_accuracy"] - metrics["accuracy"]
+        metrics["overfitting"] = metrics["train_accuracy"] - metrics["accuracy"]
 
         mlflow.log_metrics(metrics)
         mlflow.sklearn.log_model(model, "model")
