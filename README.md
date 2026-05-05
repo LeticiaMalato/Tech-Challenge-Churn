@@ -48,13 +48,7 @@ O script executa em sequência:
 - Promoção do melhor modelo para artifacts/churn_pipeline.joblib
 
 
-2. Acompanhar experimentos no MLflow
-```bash
-mlflow ui --port 5000
-# Acesse http://localhost:5000
-```
-
-3. Servir o modelo via API
+2. Servir o modelo via API
 ```bash
 uvicorn src.api.app:app --reload --port 8000
 # Documentação interativa: http://localhost:8000/docs
