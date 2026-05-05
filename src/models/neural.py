@@ -12,6 +12,23 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from src.config import EPOCHS, PATIENCE, LR, BATCH_SIZE, MLFLOW_EXPERIMENT, MODEL_ARTIFACT_PATH
 from src.evaluation.metrics import calculate_metrics
 
+class MLPSklearnWrapper:
+    """Wraps PyTorch MLP + preprocessor to behave like a sklearn pipeline."""
+
+    def __init__(self, preprocessor, model):
+        self.preprocessor = preprocessor
+        self.model = model
+
+    def predict_proba(self, X):
+        X_sc = self.preprocessor.transform(X)
+        X_t = torch.tensor(np.array(X_sc).astype(float), dtype=torch.float)
+        self.model.eval()
+        with torch.no_grad():
+            proba = self.model(X_t).numpy().flatten()
+        return np.column_stack([1 - proba, proba])  # shape (N, 2) like sklearn
+
+    def predict(self, X, threshold=0.5):
+        return (self.predict_proba(X)[:, 1] >= threshold).astype(int)
 
 def create_tensors(X_train_sc, X_val_sc, X_test_sc, y_train, y_val, y_test):
 
@@ -43,7 +60,7 @@ def create_model(input_dim: int) -> nn.Sequential:
     )
 
 
-def mlp(X_train_sc, X_val_sc, X_test_sc, y_train, y_val, y_test, dataset_meta: dict):
+def mlp(X_train_sc, X_val_sc, X_test_sc, y_train, y_val, y_test, dataset_meta: dict, preprocessor=None):
 
     # Converte dados para tensores
     X_train_t, X_val_t, X_test_t, y_train_t, y_val_t, y_test_t = create_tensors(
@@ -166,10 +183,10 @@ def mlp(X_train_sc, X_val_sc, X_test_sc, y_train, y_val, y_test, dataset_meta: d
         print(f"\n  Melhor Val Loss: {best_val_loss:.4f} (época {stop_epoch})")
 
        
-        
+        wrapper = MLPSklearnWrapper(preprocessor=preprocessor, model=classificator)
 
         artifact = {
-            "model": classificator,
+            "pipeline": wrapper,   # now uses 'pipeline' key, compatible with the API
             "threshold": THRESHOLD,
             "metadata": {**dataset_meta, "run_name": "mlp_pytorch"},
         }

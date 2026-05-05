@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Users/RafaelJuliano/pessoal/Tech-Challenge-Churn/mlruns/1/models/m-9829f1bb7d264cb0a782eb29eb76c769/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.0
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.11.1
+model_id: m-9829f1bb7d264cb0a782eb29eb76c769
+model_size_bytes: 3687
+model_uuid: m-9829f1bb7d264cb0a782eb29eb76c769
+prompts: null
+run_id: 5ef01b5b89dd4512a81d8d7eeaeef7ba
+utc_time_created: '2026-05-05 00:27:12.346201'
