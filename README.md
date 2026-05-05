@@ -78,18 +78,28 @@ uvicorn src.serving.api:app --host 0.0.0.0 --port 8000 --reload
 ### Predição
 
 ```bash
-POST /predict
+POST https://tech-challenge-churn.onrender.com//predict
 Content-Type: application/json
 
 {
-  "tenure": 24,
-  "monthly_charges": 75.5,
-  "total_charges": 1800.0,
+  "gender": "Male",
+  "senior_citizen": "No",
+  "partner": "Yes",
+  "dependents": "No",
+  "tenure_months": 24,
   "contract": "Month-to-month",
+  "paperless_billing": "Yes",
+  "payment_method": "Electronic check",
+  "monthly_charges": 65.5,
+  "phone_service": "Yes",
   "internet_service": "Fiber optic",
+  "multiple_lines": "Yes",
+  "online_security": "No",
+  "online_backup": "No",
+  "device_protection": "No",
   "tech_support": "No",
-  "paperless_billing": true,
-  "payment_method": "Electronic check"
+  "streaming_tv": "No",
+  "streaming_movies": "No"
 }
 ```
 
@@ -107,7 +117,7 @@ Content-Type: application/json
 ### Health Check
 
 ```bash
-GET /health
+GET https://tech-challenge-churn.onrender.com//health
 → {"status": "ok", "model": "churn-mlp-v1.0", "uptime": "2h 34m"}
 ```
 
