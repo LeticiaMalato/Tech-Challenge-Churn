@@ -125,15 +125,11 @@ def train_pipeline(
 
 
 def get_preprocessed_data(X_train, X_val, X_test, y_train, y_val, y_test):
-    # Aplica o pipeline de pré-processamento (sem model) para obter os dados escalados.
-
-    preprocessor = create_preprocessing_pipeline()  # ok
+    preprocessor = create_preprocessing_pipeline()
     preprocessor.fit(X_train, y_train)
-
     X_train_sc = preprocessor.transform(X_train)
-    X_val_sc = preprocessor.transform(X_val)
-    X_test_sc = preprocessor.transform(X_test)
-
-    return X_train_sc, X_val_sc, X_test_sc
+    X_val_sc   = preprocessor.transform(X_val)
+    X_test_sc  = preprocessor.transform(X_test)
+    return X_train_sc, X_val_sc, X_test_sc, preprocessor
 
 

@@ -86,7 +86,7 @@ def main():
         resultados_metricas.append(m)
     
     #Treinar Mlp
-    X_train_sc, X_val_sc, X_test_sc = get_preprocessed_data(
+    X_train_sc, X_val_sc, X_test_sc, preprocessor = get_preprocessed_data(
     X_train, X_val, X_test, y_train, y_val, y_test
 )
     _, y_pred_mlp, y_proba_mlp = mlp(
@@ -97,6 +97,7 @@ def main():
         y_val=y_val,
         y_test=y_test,
         dataset_meta=dataset_meta,
+        preprocessor=preprocessor,
     )
     m_mlp = calculate_metrics(y_test, y_pred_mlp, y_proba_mlp)  
     m_mlp["model"] = "mlp_pytorch"
