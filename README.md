@@ -13,15 +13,14 @@ Sistema completo de predição de churn para operadora de telecomunicações, co
 ### Pré-requisitos
 
 - Python 3.10+
-- Docker (opcional, recomendado para produção)
 - Git
 
 ### Instalação local
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-time/churn-predictor.git
-cd churn-predictor
+git clone https://github.com/LeticiaMalato/Tech-Challenge-Churn.git
+cd Tech-Challenge-Churn
 
 # 2. Crie o ambiente virtual
 python -m venv .venv
@@ -30,47 +29,36 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 # 3. Instale as dependências
 pip install -r requirements.txt
 
-# 4. Configure variáveis de ambiente
-cp .env.example .env
-# Edite .env com suas configs (MLFLOW_TRACKING_URI, etc.)
-```
-
-### Instalação com Docker
-
-```bash
-docker-compose up --build
-# API disponível em http://localhost:8000/docs
 ```
 
 ---
 
 ## Executando o Pipeline Completo
 
+1. Treinar todos os modelos 
 ```bash
-# 1. Ingestão e pré-processamento
-python src/data/ingestion.py --input data/raw/telco.csv
+python main.py
+```
+O script executa em sequência:
 
-# 2. Treinar baselines (Scikit-Learn)
-python src/models/baselines.py --experiment churn_baselines
+- EDA com visualizações (distribuição do target, outliers, análise bivariada)
+- Treino de baselines: DummyClassifier, Logistic Regression, Decision Tree, Random Forest
+- Treino da MLP PyTorch com early stopping
+- Comparação de métricas e análise financeira (FP/FN/resultado líquido)
+- Promoção do melhor modelo para artifacts/churn_pipeline.joblib
 
-# 3. Treinar MLP (PyTorch)
-python src/models/train.py \
-    --epochs 100 \
-    --lr 0.001 \
-    --hidden 128 64 32 \
-    --dropout 0.3 \
-    --experiment churn_mlp_prod
 
-# 4. Comparar experimentos no MLflow
+2. Acompanhar experimentos no MLflow
+```bash
 mlflow ui --port 5000
-
-# 5. Registrar melhor modelo
-python src/models/register_model.py --run-id <RUN_ID> --name churn-mlp-prod
-
-# 6. Servir via API
-uvicorn src.serving.api:app --host 0.0.0.0 --port 8000 --reload
+# Acesse http://localhost:5000
 ```
 
+3. Servir o modelo via API
+```bash
+uvicorn src.api.app:app --reload --port 8000
+# Documentação interativa: http://localhost:8000/docs
+```
 ---
 
 ##  Usando a API
@@ -129,13 +117,16 @@ Documentação interativa disponível em: `http://localhost:8000/docs`
 
 ```bash
 # Todos os testes
-pytest tests/ -v
+pytest
 
 # Com cobertura
-pytest tests/ --cov=src --cov-report=html
+task test-cov
 
-# Apenas API
-pytest tests/test_api.py -v
+# Apenas smoke tests da API
+pytest tests/unit/test_api_smoke.py -v
+
+# Lint + format + testes (CI completo)
+task check
 ```
 
 ---
@@ -145,16 +136,18 @@ pytest tests/test_api.py -v
 **Por que MLP e não LSTM/Transformer?**
 Os dados são tabulares e estáticos, sem sequência temporal explícita. MLP com regularização adequada supera modelos mais complexos nesse contexto, com menor custo de treinamento e inferência.
 
+**Por que real-time e não batch?**
+Permite integração direta com CRM e ação imediata durante atendimento. A latência de inferência é menor que 50ms, dentro do SLO de 200ms. Ver docs/DEPLOY_ARCHITECTURE.md.
+
 **Por que FastAPI?**
 Validação automática com Pydantic, documentação Swagger gerada em `/docs`, async nativo e performance superior ao Flask para I/O intensivo.
 
-**Por que MLflow e não W&B?**
-MLflow é open source, pode ser auto-hospedado sem custo e integra nativamente com o Model Registry para controle de versão e stage de modelos (Staging → Production → Archived).
+**Por que MLflow?**
+MLflow é open source, pode ser auto-hospedado sem custo e integra nativamente com o Model Registry para controle de versão e stage de modelos.
+O custo de um falso negativo (cliente que cancela sem ação) é maior que o de um falso positivo (campanha desnecessária). o threshold foi calibrado para aumentar recall na classe chun. Ver docs/MODEK_CARD.md .
 
-**Por que threshold 0.45 e não 0.5?**
-Calibrado para maximizar F1 da classe churn na validação. O negócio aceita mais falsos positivos (contatar cliente que não ia sair) do que falsos negativos (perder cliente sem agir).
-
----
+**Por que threshold 0.4?**
+O custo de um falso negativo (cliente que cancela sem ação) é maior que o de um falso positivo (campanha desnecessária). o threshold foi calibrado para aumentar recall na classe chun. Ver docs/MODEK_CARD.md .
 
 ## Time
 
