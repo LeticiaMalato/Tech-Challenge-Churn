@@ -144,10 +144,10 @@ Validação automática com Pydantic, documentação Swagger gerada em `/docs`, 
 
 **Por que MLflow?**
 MLflow é open source, pode ser auto-hospedado sem custo e integra nativamente com o Model Registry para controle de versão e stage de modelos.
+O custo de um falso negativo (cliente que cancela sem ação) é maior que o de um falso positivo (campanha desnecessária). o threshold foi calibrado para aumentar recall na classe chun. Ver docs/MODEK_CARD.md .
 
 **Por que threshold 0.4?**
-O custo de um falso negativo (cliente que cancela sem ação) é maior que o de um falso positivo (campanha desnecessária). O threshold foi calibrado para aumentar recall na classe churn. Ver docs/MODEL_CARD.md.
----
+O custo de um falso negativo (cliente que cancela sem ação) é maior que o de um falso positivo (campanha desnecessária). o threshold foi calibrado para aumentar recall na classe chun. Ver docs/MODEK_CARD.md .
 
 ## Time
 
